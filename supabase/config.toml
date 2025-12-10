@@ -1,0 +1,20 @@
+project_id = "cisnuoydruthtirgehwj"
+
+[functions.health-assistant]
+verify_jwt = false
+
+[functions.voice-to-text]
+verify_jwt = false
+
+[functions.text-to-speech]
+verify_jwt = false
+
+[functions.get-mapbox-token]
+verify_jwt = false
+
+[functions.detect-temperature]
+verify_jwt = false
+
+[functions.detect-blood-pressure]
+verify_jwt = false
+
