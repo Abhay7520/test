@@ -85,6 +85,8 @@ const ThermometerDetection = ({ onTemperatureDetected, language }: ThermometerDe
           title: t.successTitle,
           description: `${t.successDesc} ${data.temperature}`,
         });
+      } else if (data?.error) {
+        throw new Error(data.error);
       } else {
         throw new Error("Could not read thermometer");
       }

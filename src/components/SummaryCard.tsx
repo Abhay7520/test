@@ -59,27 +59,70 @@ const SummaryCard = ({ data, language, onDownload, onShare, onSave }: SummaryCar
   const navigate = useNavigate();
   const [showBookingDialog, setShowBookingDialog] = useState(false);
 
-  const t = {
+  const map = {
     en: {
       recDoctor: "Recommended Doctor",
       bookAppt: "Book Appointment",
-      specialty: "Specialty"
+      condition: "Condition",
+      severity: "Severity",
+      suggestions: "Suggestions",
+      diet: "Diet Recommendations",
+      medicine: "Medicine Recommendations",
+      specialists: "Suggested Specialists",
+      recheck: "Recheck in",
+      download: "Download",
+      share: "Share",
+      save: "Save",
+      temp: "Temperature",
+      summary: "Health Summary",
+      bookTitle: "Book an Appointment?",
+      bookDesc: "Based on your symptoms, we recommend consulting a specialist. Do you want to proceed to book an appointment now?",
+      cancel: "No, later",
+      confirm: "Yes, Book Now"
     },
     hi: {
       recDoctor: "अनुशंसित डॉक्टर",
       bookAppt: "अपॉइंटमेंट बुक करें",
-      specialty: "विशेषज्ञता"
+      condition: "स्थिति",
+      severity: "गंभीरता",
+      suggestions: "सुझाव",
+      diet: "आहार सुझाव",
+      medicine: "दवा सुझाव",
+      specialists: "सुझाए गए विशेषज्ञ",
+      recheck: "पुनः जांच",
+      download: "डाउनलोड",
+      share: "साझा करें",
+      save: "सहेजें",
+      temp: "तापमान",
+      summary: "स्वास्थ्य सारांश",
+      bookTitle: "अपॉइंटमेंट बुक करें?",
+      bookDesc: "आपके लक्षणों के आधार पर, हम विशेषज्ञ से परामर्श की सलाह देते हैं। क्या आप अभी अपॉइंटमेंट बुक करना चाहते हैं?",
+      cancel: "नहीं, बाद में",
+      confirm: "हां, अभी बुक करें"
     },
     te: {
       recDoctor: "సిఫార్సు చేసిన డాక్టర్",
       bookAppt: "అపాయింట్‌మెంట్ బుక్ చేయండి",
-      specialty: "స్పెషాలిటీ"
+      condition: "పరిస్థితి",
+      severity: "తీవ్రత",
+      suggestions: "సూచనలు",
+      diet: "ఆహార సూచనలు",
+      medicine: "మందుల సూచనలు",
+      specialists: "సూచించిన నిపుణులు",
+      recheck: "తిరిగి తనిఖీ చేయండి",
+      download: "డౌన్‌లోడ్",
+      share: "భాగస్వామ్యం",
+      save: "సేవ్",
+      temp: "ఉష్ణోగ్రత",
+      summary: "ఆరోగ్య సారాంశం",
+      bookTitle: "అపాయింట్‌మెంట్ బుక్ చేయాలా?",
+      bookDesc: "మీ లక్షణాల ఆధారంగా, నిపుణుడిని సంప్రదించాలని మేము సిఫార్సు చేస్తున్నాము. మీరు ఇప్పుడే అపాయింట్‌మెంట్ బుక్ చేసుకోవాలనుకుంటున్నారా?",
+      cancel: "వద్దు, తరువాత",
+      confirm: "అవును, ఇప్పుడే బుక్ చేయండి"
     }
-  }[language as "en" | "hi" | "te"] || {
-    recDoctor: "Recommended Doctor",
-    bookAppt: "Book Appointment",
-    specialty: "Specialty"
   };
+
+  const t = map[language as keyof typeof map] || map.en;
 
   const handleBookAppointment = () => {
     let specialtyParam = "";
@@ -99,7 +142,7 @@ const SummaryCard = ({ data, language, onDownload, onShare, onSave }: SummaryCar
 Severity: ${data.severity}
 Suggestions: ${data.suggestions || "N/A"}`;
 
-    navigate(`/telemedicine?lang=${language}`, {
+    navigate(`/hospitals?lang=${language}`, {
       state: {
         specialty: specialtyParam,
         reason: reason
@@ -115,7 +158,7 @@ Suggestions: ${data.suggestions || "N/A"}`;
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-4">
                 <AlertCircle className="w-8 h-8" />
-                <h3 className="text-2xl font-bold">Health Summary</h3>
+                <h3 className="text-2xl font-bold">{t.summary}</h3>
               </div>
               <div className={`inline-block px-4 py-2 rounded-full ${config.badge} font-bold mb-4`}>
                 {config.icon} {config.label}
@@ -125,19 +168,19 @@ Suggestions: ${data.suggestions || "N/A"}`;
 
           <div className="space-y-3 text-lg">
             <div className="flex items-start gap-3 p-3 bg-card rounded-lg">
-              <span className="font-bold min-w-fit">🩺 Condition:</span>
+              <span className="font-bold min-w-fit">🩺 {t.condition}:</span>
               <span>{data.condition}</span>
             </div>
 
             {data.temperature && (
               <div className="flex items-start gap-3 p-3 bg-card rounded-lg">
-                <span className="font-bold min-w-fit">🌡 Temperature:</span>
+                <span className="font-bold min-w-fit">🌡 {t.temp}:</span>
                 <span>{data.temperature}</span>
               </div>
             )}
 
             <div className="flex items-start gap-3 p-3 bg-card rounded-lg">
-              <span className="font-bold min-w-fit">💡 Suggestions:</span>
+              <span className="font-bold min-w-fit">💡 {t.suggestions}:</span>
               <span>{data.suggestions}</span>
             </div>
 
@@ -145,7 +188,7 @@ Suggestions: ${data.suggestions || "N/A"}`;
               <div className="flex items-start gap-3 p-3 bg-card rounded-lg">
                 <Utensils className="w-5 h-5 mt-1 flex-shrink-0" />
                 <div>
-                  <span className="font-bold block">Diet Recommendations:</span>
+                  <span className="font-bold block">{t.diet}:</span>
                   <span>{data.diet}</span>
                 </div>
               </div>
@@ -155,7 +198,7 @@ Suggestions: ${data.suggestions || "N/A"}`;
               <div className="flex items-start gap-3 p-3 bg-card rounded-lg">
                 <Pill className="w-5 h-5 mt-1 flex-shrink-0" />
                 <div>
-                  <span className="font-bold block">Medicine Recommendations:</span>
+                  <span className="font-bold block">{t.medicine}:</span>
                   <span>{data.medicine}</span>
                 </div>
               </div>
@@ -165,7 +208,7 @@ Suggestions: ${data.suggestions || "N/A"}`;
               <div className="flex items-start gap-3 p-3 bg-card rounded-lg">
                 <Stethoscope className="w-5 h-5 mt-1 flex-shrink-0" />
                 <div>
-                  <span className="font-bold block">Suggested Specialists:</span>
+                  <span className="font-bold block">{t.specialists}:</span>
                   <span>{data.specialists}</span>
                 </div>
               </div>
@@ -173,7 +216,7 @@ Suggestions: ${data.suggestions || "N/A"}`;
 
             {data.recheckIn && (
               <div className="flex items-start gap-3 p-3 bg-card rounded-lg">
-                <span className="font-bold min-w-fit">📅 Recheck in:</span>
+                <span className="font-bold min-w-fit">📅 {t.recheck}:</span>
                 <span>{data.recheckIn}</span>
               </div>
             )}
@@ -182,16 +225,16 @@ Suggestions: ${data.suggestions || "N/A"}`;
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button onClick={onDownload} className="flex-1" size="lg">
               <Download className="mr-2 h-5 w-5" />
-              Download
+              {t.download}
             </Button>
             <Button onClick={onShare} variant="outline" className="flex-1" size="lg">
               <Share2 className="mr-2 h-5 w-5" />
-              Share
+              {t.share}
             </Button>
             {onSave && (
               <Button onClick={onSave} variant="secondary" className="flex-1" size="lg">
                 <Save className="mr-2 h-5 w-5" />
-                Save
+                {t.save}
               </Button>
             )}
           </div>
@@ -208,14 +251,6 @@ Suggestions: ${data.suggestions || "N/A"}`;
                   {t.bookAppt}
                 </Button>
               </div>
-
-              <div className="flex items-center gap-2 p-3 bg-secondary/10 rounded-lg mt-3">
-                <Stethoscope className="w-5 h-5 text-secondary" />
-                <div>
-                  <p className="text-xs text-muted-foreground">{t.recDoctor}</p>
-                  <p className="font-semibold text-sm">{data.specialists.split(',')[0]}</p>
-                </div>
-              </div>
             </>
           )}
         </div>
@@ -224,15 +259,14 @@ Suggestions: ${data.suggestions || "N/A"}`;
       <AlertDialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Book an Appointment?</AlertDialogTitle>
+            <AlertDialogTitle>{t.bookTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              Based on your symptoms, we recommend consulting a specialist.
-              Do you want to proceed to book an appointment now?
+              {t.bookDesc}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>No, later</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBookAppointment}>Yes, Book Now</AlertDialogAction>
+            <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBookAppointment}>{t.confirm}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

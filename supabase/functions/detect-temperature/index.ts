@@ -17,50 +17,52 @@ serve(async (req) => {
       throw new Error('No image provided');
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY not configured');
     }
 
-    console.log('Processing thermometer image with AI vision...');
+    console.log('Processing thermometer image with Gemini 1.5 Flash...');
 
-    // Use Lovable AI (Gemini) vision to detect temperature
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Extract base64 data and mime type
+    // image format: "data:image/jpeg;base64,/9j/4AAQ..."
+    const matches = image.match(/^data:(.+);base64,(.+)$/);
+    let mimeType = 'image/jpeg';
+    let base64Data = image;
+
+    if (matches) {
+      mimeType = matches[1];
+      base64Data = matches[2];
+    }
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'You are a medical thermometer reader. Look at this thermometer image and tell me ONLY the temperature reading. Respond with just the number and unit (e.g., "101.5°F" or "38.6°C"). If you cannot see a clear reading, say "Unable to read".'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: image
-                }
+        contents: [{
+          parts: [
+            { text: 'You are a medical thermometer reader. Look at this thermometer image and tell me ONLY the temperature reading. Respond with just the number and unit (e.g., "101.5°F" or "38.6°C"). If you cannot see a clear reading, say "Unable to read".' },
+            {
+              inline_data: {
+                mime_type: mimeType,
+                data: base64Data
               }
-            ]
-          }
-        ]
+            }
+          ]
+        }]
       })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI vision error:', errorText);
-      throw new Error('Failed to process image');
+      console.error('Gemini API error:', errorText);
+      throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    const temperature = data.choices?.[0]?.message?.content?.trim();
+    const temperature = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
     console.log('Detected temperature:', temperature);
 

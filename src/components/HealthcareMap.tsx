@@ -57,13 +57,13 @@ const HealthcareMap: React.FC = () => {
     const R = 6371; // Earth's radius in kilometers
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
+    const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
       Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
-    
+
     if (distance < 1) {
       return `${Math.round(distance * 1000)} meters`;
     }
@@ -71,84 +71,101 @@ const HealthcareMap: React.FC = () => {
   };
 
   // Fetch healthcare facilities from OpenStreetMap Overpass API
+  // List of Overpass API instances to try
+  const OVERPASS_INSTANCES = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://lz4.overpass-api.de/api/interpreter',
+  ];
+
   const fetchFacilities = async (location: { lat: number; lon: number }, radius = searchRadius) => {
     setLoading(true);
     setError(null);
     console.log('Fetching facilities for location:', location, 'with radius:', radius);
 
-    try {
-      // Overpass API query - searches within specified radius
-      const query = `
-        [out:json][timeout:25];
-        (
-          node["amenity"="hospital"](around:${radius},${location.lat},${location.lon});
-          node["amenity"="clinic"](around:${radius},${location.lat},${location.lon});
-          node["amenity"="doctors"](around:${radius},${location.lat},${location.lon});
-          node["amenity"="pharmacy"](around:${radius},${location.lat},${location.lon});
-          way["amenity"="hospital"](around:${radius},${location.lat},${location.lon});
-          way["amenity"="clinic"](around:${radius},${location.lat},${location.lon});
-          way["amenity"="doctors"](around:${radius},${location.lat},${location.lon});
-          way["amenity"="pharmacy"](around:${radius},${location.lat},${location.lon});
-        );
-        out center;
-      `;
+    const query = `
+      [out:json][timeout:25];
+      (
+        node["amenity"="hospital"](around:${radius},${location.lat},${location.lon});
+        node["amenity"="clinic"](around:${radius},${location.lat},${location.lon});
+        node["amenity"="doctors"](around:${radius},${location.lat},${location.lon});
+        node["amenity"="pharmacy"](around:${radius},${location.lat},${location.lon});
+        way["amenity"="hospital"](around:${radius},${location.lat},${location.lon});
+        way["amenity"="clinic"](around:${radius},${location.lat},${location.lon});
+        way["amenity"="doctors"](around:${radius},${location.lat},${location.lon});
+        way["amenity"="pharmacy"](around:${radius},${location.lat},${location.lon});
+      );
+      out center;
+    `;
 
-      const response = await fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        body: query,
-      });
+    let lastError;
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch facilities');
-      }
+    for (const instance of OVERPASS_INSTANCES) {
+      try {
+        console.log(`Trying Overpass instance: ${instance}`);
+        const response = await fetch(instance, {
+          method: 'POST',
+          body: query,
+        });
 
-      const data = await response.json();
-      console.log('Overpass API response:', data);
-
-      // Process the results
-      const processedFacilities: Facility[] = data.elements.map((element: any) => {
-        const lat = element.lat || element.center?.lat;
-        const lon = element.lon || element.center?.lon;
-        
-        // Build comprehensive address
-        let address = '';
-        if (element.tags?.['addr:street']) {
-          address = `${element.tags['addr:housenumber'] || ''} ${element.tags['addr:street']}`.trim();
-          if (element.tags?.['addr:city']) {
-            address += `, ${element.tags['addr:city']}`;
-          }
-        } else if (element.tags?.['addr:city']) {
-          address = element.tags['addr:city'];
-        } else if (element.tags?.['addr:suburb']) {
-          address = element.tags['addr:suburb'];
-        } else if (element.tags?.['addr:district']) {
-          address = element.tags['addr:district'];
+        if (!response.ok) {
+          throw new Error(`Status ${response.status} ${response.statusText}`);
         }
-        
-        return {
-          id: element.id.toString(),
-          name: element.tags?.name || `${element.tags?.amenity || 'Healthcare Facility'}`,
-          lat,
-          lon,
-          type: element.tags?.amenity || 'healthcare',
-          address: address || undefined,
-          tags: element.tags,
-        };
-      }).filter((f: Facility) => f.lat && f.lon); // Filter out any without coordinates
 
-      console.log(`✅ Found ${processedFacilities.length} healthcare facilities`);
-      setFacilities(processedFacilities);
-      setLoading(false);
-    } catch (err) {
-      console.error('Error fetching facilities:', err);
-      setError('Failed to load healthcare facilities. Please try again.');
-      setLoading(false);
+        const data = await response.json();
+        console.log('Overpass API response:', data);
+
+        // Process the results
+        const processedFacilities: Facility[] = data.elements.map((element: any) => {
+          const lat = element.lat || element.center?.lat;
+          const lon = element.lon || element.center?.lon;
+
+          // Build comprehensive address
+          let address = '';
+          if (element.tags?.['addr:street']) {
+            address = `${element.tags['addr:housenumber'] || ''} ${element.tags['addr:street']}`.trim();
+            if (element.tags?.['addr:city']) {
+              address += `, ${element.tags['addr:city']}`;
+            }
+          } else if (element.tags?.['addr:city']) {
+            address = element.tags['addr:city'];
+          } else if (element.tags?.['addr:suburb']) {
+            address = element.tags['addr:suburb'];
+          } else if (element.tags?.['addr:district']) {
+            address = element.tags['addr:district'];
+          }
+
+          return {
+            id: element.id.toString(),
+            name: element.tags?.name || `${element.tags?.amenity || 'Healthcare Facility'}`,
+            lat,
+            lon,
+            type: element.tags?.amenity || 'healthcare',
+            address: address || undefined,
+            tags: element.tags,
+          };
+        }).filter((f: Facility) => f.lat && f.lon); // Filter out any without coordinates
+
+        console.log(`✅ Found ${processedFacilities.length} healthcare facilities using ${instance}`);
+        setFacilities(processedFacilities);
+        setLoading(false);
+        return; // Success, exit function
+      } catch (err) {
+        console.warn(`Failed to fetch from ${instance}:`, err);
+        lastError = err;
+        // Continue to next instance
+      }
     }
+
+    // If we get here, all instances failed
+    console.error('All Overpass instances failed:', lastError);
+    setError(`Failed to load healthcare facilities: ${lastError instanceof Error ? lastError.message : 'Unknown error'}`);
+    setLoading(false);
   };
 
   // Filter facilities based on selected type
-  const filteredFacilities = filterType === 'all' 
-    ? facilities 
+  const filteredFacilities = filterType === 'all'
+    ? facilities
     : facilities.filter(f => f.type === filterType);
 
   // Handle search radius change
@@ -212,8 +229,8 @@ const HealthcareMap: React.FC = () => {
           {/* Search Radius */}
           <div className="flex-1">
             <label className="text-xs font-semibold text-gray-700 block mb-1">Search Radius</label>
-            <select 
-              value={searchRadius} 
+            <select
+              value={searchRadius}
               onChange={(e) => handleRadiusChange(Number(e.target.value))}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
@@ -228,8 +245,8 @@ const HealthcareMap: React.FC = () => {
           {/* Filter by Type */}
           <div className="flex-1">
             <label className="text-xs font-semibold text-gray-700 block mb-1">Filter Type</label>
-            <select 
-              value={filterType} 
+            <select
+              value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
@@ -297,12 +314,12 @@ const HealthcareMap: React.FC = () => {
               <div className="p-1 min-w-[200px]">
                 <h3 className="font-semibold text-sm mb-1">{facility.name}</h3>
                 <p className="text-xs text-gray-500 capitalize mb-2">
-                  <span className="inline-block w-2 h-2 rounded-full mr-1" 
+                  <span className="inline-block w-2 h-2 rounded-full mr-1"
                     style={{ backgroundColor: facility.type === 'hospital' ? '#EF4444' : facility.type === 'pharmacy' ? '#8B5CF6' : '#F59E0B' }}>
                   </span>
                   {facility.type}
                 </p>
-                
+
                 {/* Distance */}
                 <div className="text-xs text-blue-600 font-semibold mb-2">
                   📍 {calculateDistance(currentLocation.lat, currentLocation.lon, facility.lat, facility.lon)} away
@@ -318,7 +335,7 @@ const HealthcareMap: React.FC = () => {
                     <span className="font-semibold">Coordinates:</span> {facility.lat.toFixed(6)}, {facility.lon.toFixed(6)}
                   </p>
                 )}
-                
+
                 {/* Contact Information */}
                 {(facility.tags?.phone || facility.tags?.website || facility.tags?.opening_hours || facility.tags?.email || facility.tags?.emergency === 'yes') && (
                   <div className="border-t pt-2 mt-2 space-y-1">
@@ -330,9 +347,9 @@ const HealthcareMap: React.FC = () => {
                     {facility.tags?.website && (
                       <div className="text-xs">
                         <span className="font-semibold">🌐 Website:</span>{' '}
-                        <a 
+                        <a
                           href={facility.tags.website.startsWith('http') ? facility.tags.website : `https://${facility.tags.website}`}
-                          target="_blank" 
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline"
                         >

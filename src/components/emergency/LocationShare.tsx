@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Contact {
   id: string;
@@ -25,21 +26,18 @@ interface Contact {
 
 const LocationShare = () => {
   const { t } = useLanguage();
+  const { emergencyContacts, updateEmergencyContacts } = useAuth(); // Use global state
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [shared, setShared] = useState(false);
   const [showAddContactDialog, setShowAddContactDialog] = useState(false);
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  // const [contacts, setContacts] = useState<Contact[]>([]); // Removed local state
   const [newContact, setNewContact] = useState({ name: "", phone: "", relation: "" });
   const [watchId, setWatchId] = useState<number | null>(null);
 
   useEffect(() => {
-    const savedContacts = localStorage.getItem("emergencyContacts");
-    if (savedContacts) {
-      setContacts(JSON.parse(savedContacts));
-    }
-
+    // No need to load from localStorage manually, useAuth handles it
     startLocationWatch();
 
     return () => {
@@ -114,15 +112,15 @@ const LocationShare = () => {
       relation: newContact.relation,
     };
 
-    const updatedContacts = [...contacts, contact];
-    setContacts(updatedContacts);
-    localStorage.setItem("emergencyContacts", JSON.stringify(updatedContacts));
+    const updatedContacts = [...emergencyContacts, contact];
+    updateEmergencyContacts(updatedContacts); // Update global state
 
     setNewContact({ name: "", phone: "", relation: "" });
     setShowAddContactDialog(false);
     toast.success("Contact added successfully");
 
-    setTimeout(() => shareWithContacts(updatedContacts), 500);
+    // Notify the newly added contact specifically
+    // setTimeout(() => shareWithContacts([contact]), 500);
   };
 
   const shareWithContacts = async (currentContacts: Contact[]) => {
@@ -157,13 +155,13 @@ const LocationShare = () => {
   const handleShareClick = () => {
     if (!location) return;
 
-    if (contacts.length === 0) {
+    if (emergencyContacts.length === 0) {
       setShowAddContactDialog(true);
       toast.info(t.noContacts || "No emergency contacts found", {
         description: t.addContactDesc,
       });
     } else {
-      shareWithContacts(contacts);
+      shareWithContacts(emergencyContacts);
     }
   };
 
@@ -262,14 +260,14 @@ const LocationShare = () => {
                   size="lg"
                 >
                   <Share2 className="h-5 w-5 mr-2" />
-                  {shared ? t.locationSharedSuccess : t.shareWithContactsAction}
+                  {shared ? t.locationSharedSuccess : "Share with Emergency Contacts"}
                 </Button>
               </div>
 
               {shared && (
                 <Card className="p-4 bg-info-light border-info/20">
                   <p className="text-sm text-info">
-                    <strong>Shared with:</strong> {contacts.length} contact{contacts.length !== 1 ? 's' : ''} (via SMS & WhatsApp)
+                    <strong>Shared with:</strong> {emergencyContacts.length} contact{emergencyContacts.length !== 1 ? 's' : ''} (via SMS & WhatsApp)
                   </p>
                 </Card>
               )}

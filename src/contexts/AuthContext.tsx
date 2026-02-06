@@ -13,7 +13,7 @@ interface Contact {
     id: string;
     name: string;
     phone: string;
-    email?: string;
+    email: string;
     relation: string;
 }
 
@@ -53,6 +53,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Check active session
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (session?.user) {
+                // We have a session, but we need to fetch data. 
+                // Ensure loading is true until fetch finishes.
+                // It is already true by default state, but good to be explicit if logic changes.
                 fetchUserData(session.user.id, session.user.email!);
             } else {
                 setIsLoading(false);
@@ -63,8 +66,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
             if (session?.user) {
+                // User signed in or session refreshed
+                setIsLoading(true); // <--- IMPORTANT: prevent premature "not authenticated" state
                 fetchUserData(session.user.id, session.user.email!);
             } else {
+                // User signed out
                 setUser(null);
                 setEmergencyContacts([]);
                 setAppointments([]);
@@ -82,8 +88,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     schema: 'public',
                     table: 'appointments'
                 },
-                (payload) => {
-                    if (user?.id) fetchUserData(user.id, user.email);
+                async (payload) => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session?.user) fetchUserData(session.user.id, session.user.email!);
                 }
             )
             .on(
@@ -93,8 +100,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     schema: 'public',
                     table: 'emergency_contacts'
                 },
-                (payload) => {
-                    if (user?.id) fetchUserData(user.id, user.email);
+                async (payload) => {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session?.user) fetchUserData(session.user.id, session.user.email!);
                 }
             )
             .subscribe();
@@ -103,7 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             subscription.unsubscribe();
             supabase.removeChannel(channel);
         };
-    }, [user?.id]); // Add user dependency to ensure we have user ID for refetching
+    }, []); // Empty dependency array to run once on mount
 
     const fetchUserData = async (userId: string, email: string) => {
         try {
@@ -149,7 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     id: c.id,
                     name: c.name,
                     phone: c.phone,
-                    email: c.email || undefined,
+                    email: c.email || "",
                     relation: c.relation
                 })));
             }

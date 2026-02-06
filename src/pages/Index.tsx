@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, Mic, Globe, Brain, Users, Smartphone, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useRef, useState } from "react";
 import { LanguageSelector } from "@/components/common/LanguageSelector";
 import LoadingScreen from "@/components/auralaid/ui/LoadingScreen";
@@ -35,6 +36,7 @@ const useIntersectionObserver = (options = {}, dependency: any = null) => {
 
 const Index = () => {
   const { t } = useLanguage();
+  const { isAuthenticated } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -59,20 +61,29 @@ const Index = () => {
     <div className="min-h-screen overflow-x-hidden">
       {/* Floating Language Selector with modern glass effect */}
       <div className="fixed top-4 right-4 z-50 animate-fade-in flex gap-3">
-        <Link to="/login">
-          <Button variant="outline" className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-teal-200/50 dark:border-teal-700/50 rounded-2xl shadow-lg hover:shadow-teal-500/20 transition-all duration-300 hover:scale-105">
-            <Users className="w-4 h-4 mr-2 text-teal-600" />
-            {t.loginSignup}
-          </Button>
-        </Link>
+        {isAuthenticated ? (
+          <Link to="/dashboard">
+            <Button variant="outline" className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border-white/20 dark:border-slate-700/50 rounded-2xl shadow-lg hover:shadow-teal-500/20 transition-all duration-300 hover:scale-105">
+              <Users className="w-4 h-4 mr-2 text-teal-600 dark:text-teal-400" />
+              Dashboard
+            </Button>
+          </Link>
+        ) : (
+          <Link to="/login">
+            <Button variant="outline" className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border-white/20 dark:border-slate-700/50 rounded-2xl shadow-lg hover:shadow-teal-500/20 transition-all duration-300 hover:scale-105">
+              <Users className="w-4 h-4 mr-2 text-teal-600 dark:text-teal-400" />
+              {t.loginSignup}
+            </Button>
+          </Link>
+        )}
         <LanguageSelector />
       </div>
 
 
       {/* Enhanced Hero Section with parallax effect */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 dark:from-teal-950 dark:via-cyan-950 dark:to-blue-950">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
         {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-400/10 via-cyan-400/10 to-blue-400/10 animate-gradient-xy" />
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 via-cyan-500/5 to-blue-500/5 animate-gradient-xy" />
 
         {/* Placeholder for hero image - using gradient overlay */}
         <div className="absolute inset-0 z-0 bg-[url('https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=1920&q=80')] bg-cover bg-center opacity-15 scale-110 animate-slow-zoom" />
@@ -117,52 +128,52 @@ const Index = () => {
             {/* Action Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
               <Link to="/assistant" className="group">
-                <Card className="h-full border-2 border-primary/20 hover:border-primary transition-all duration-300 hover:shadow-[var(--shadow-glow)] hover:-translate-y-2 bg-card/80 backdrop-blur-sm">
+                <Card className="h-full border-2 border-white/20 dark:border-slate-700/50 hover:border-teal-500/50 transition-all duration-300 hover:shadow-[var(--shadow-glow)] hover:-translate-y-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl">
                   <CardContent className="p-8 text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
                       <Mic className="w-8 h-8 text-white group-hover:animate-bounce" />
                     </div>
-                    <h3 className="text-2xl font-bold mb-3 text-foreground group-hover:text-primary transition-colors">
+                    <h3 className="text-2xl font-bold mb-3 text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
                       Talk to Chatbot
                     </h3>
-                    <p className="text-muted-foreground">
+                    <p className="text-slate-600 dark:text-slate-400">
                       Get instant health guidance through our AI-powered voice assistant
                     </p>
-                    <ArrowRight className="w-5 h-5 mx-auto mt-4 text-primary group-hover:translate-x-2 transition-transform" />
+                    <ArrowRight className="w-5 h-5 mx-auto mt-4 text-teal-600 dark:text-teal-400 group-hover:translate-x-2 transition-transform" />
                   </CardContent>
                 </Card>
               </Link>
 
               <Link to="/telemedicine" className="group">
-                <Card className="h-full border-2 border-secondary/20 hover:border-secondary transition-all duration-300 hover:shadow-[var(--shadow-glow)] hover:-translate-y-2 bg-card/80 backdrop-blur-sm">
+                <Card className="h-full border-2 border-white/20 dark:border-slate-700/50 hover:border-cyan-500/50 transition-all duration-300 hover:shadow-[var(--shadow-glow)] hover:-translate-y-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl">
                   <CardContent className="p-8 text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-secondary to-accent flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
                       <Users className="w-8 h-8 text-white group-hover:animate-pulse" />
                     </div>
-                    <h3 className="text-2xl font-bold mb-3 text-foreground group-hover:text-secondary transition-colors">
+                    <h3 className="text-2xl font-bold mb-3 text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
                       Telemedicine
                     </h3>
-                    <p className="text-muted-foreground">
+                    <p className="text-slate-600 dark:text-slate-400">
                       Find specialists and book video consultations instantly
                     </p>
-                    <ArrowRight className="w-5 h-5 mx-auto mt-4 text-secondary group-hover:translate-x-2 transition-transform" />
+                    <ArrowRight className="w-5 h-5 mx-auto mt-4 text-cyan-600 dark:text-cyan-400 group-hover:translate-x-2 transition-transform" />
                   </CardContent>
                 </Card>
               </Link>
 
               <Link to="/emergency" className="group">
-                <Card className="h-full border-2 border-accent/20 hover:border-accent transition-all duration-300 hover:shadow-[var(--shadow-glow)] hover:-translate-y-2 bg-card/80 backdrop-blur-sm">
+                <Card className="h-full border-2 border-white/20 dark:border-slate-700/50 hover:border-blue-500/50 transition-all duration-300 hover:shadow-[var(--shadow-glow)] hover:-translate-y-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl">
                   <CardContent className="p-8 text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
                       <Heart className="w-8 h-8 text-white group-hover:animate-bounce" />
                     </div>
-                    <h3 className="text-2xl font-bold mb-3 text-foreground group-hover:text-accent transition-colors">
+                    <h3 className="text-2xl font-bold mb-3 text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       Emergency
                     </h3>
-                    <p className="text-muted-foreground">
+                    <p className="text-slate-600 dark:text-slate-400">
                       Call for ambulance in emergencies
                     </p>
-                    <ArrowRight className="w-5 h-5 mx-auto mt-4 text-accent group-hover:translate-x-2 transition-transform" />
+                    <ArrowRight className="w-5 h-5 mx-auto mt-4 text-blue-600 dark:text-blue-400 group-hover:translate-x-2 transition-transform" />
                   </CardContent>
                 </Card>
               </Link>
@@ -179,7 +190,7 @@ const Index = () => {
       </section>
 
       {/* Story Section with staggered animations */}
-      <section className="py-24 px-4 bg-gradient-to-b from-white via-teal-50/30 to-white dark:from-gray-900 dark:via-teal-950/30 dark:to-gray-900 relative overflow-hidden">
+      <section className="py-24 px-4 bg-slate-50 dark:bg-slate-900 relative overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute top-0 left-0 w-64 h-64 bg-teal-500/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl" />
@@ -190,7 +201,7 @@ const Index = () => {
             className={`transition-all duration-1000 ${storyVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
               }`}
           >
-            <h2 className="text-4xl md:text-6xl font-bold mb-12 text-center bg-gradient-to-r from-teal-700 to-cyan-700 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-6xl font-bold mb-12 text-center bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent">
               {t.problemTitle}
             </h2>
 
@@ -201,9 +212,9 @@ const Index = () => {
                   className={`transform transition-all duration-700 delay-${index * 100} ${storyVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
                     }`}
                 >
-                  <p className={`text-lg md:text-xl leading-relaxed ${index === 2 ? 'font-bold text-teal-900 dark:text-teal-100 text-2xl italic border-l-4 border-teal-600 pl-6 bg-teal-50 dark:bg-teal-950/50 py-4 rounded-r-2xl' : 'text-gray-700 dark:text-gray-300'
+                  <p className={`text-lg md:text-xl leading-relaxed ${index === 2 ? 'font-bold text-teal-900 dark:text-teal-100 text-2xl italic border-l-4 border-teal-500 pl-6 bg-teal-50 dark:bg-teal-900/20 py-4 rounded-r-2xl' : 'text-slate-600 dark:text-slate-300'
                     }`}>
-                    {index === 0 && <Sparkles className="inline w-5 h-5 mr-2 text-teal-600" />}
+                    {index === 0 && <Sparkles className="inline w-5 h-5 mr-2 text-teal-500" />}
                     {para}
                   </p>
                 </div>
@@ -214,7 +225,7 @@ const Index = () => {
       </section>
 
       {/* How It Works Section with card hover effects */}
-      <section className="py-24 px-4 bg-gradient-to-b from-teal-50/50 to-white dark:from-teal-950/50 dark:to-gray-900 relative">
+      <section className="py-24 px-4 bg-white dark:bg-slate-950 relative">
         <div className="container mx-auto max-w-7xl">
           <div
             ref={howItWorksRef}
@@ -225,7 +236,7 @@ const Index = () => {
               <h2 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
                 {t.howItWorksTitle}
               </h2>
-              <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+              <p className="text-xl md:text-2xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto">
                 {t.howItWorksSubtitle}
               </p>
             </div>
@@ -241,7 +252,7 @@ const Index = () => {
                   className={`group transform transition-all duration-700 delay-${item.delay} ${howItWorksVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
                     }`}
                 >
-                  <Card className="h-full border-2 border-teal-200 dark:border-teal-800 hover:border-teal-500 transition-all duration-500 hover:shadow-2xl hover:shadow-teal-500/20 hover:-translate-y-2 bg-gradient-to-br from-white to-teal-50/50 dark:from-gray-900 dark:to-teal-950/50 backdrop-blur-sm overflow-hidden relative">
+                  <Card className="h-full border-2 border-slate-100 dark:border-slate-800 hover:border-teal-500 transition-all duration-500 hover:shadow-2xl hover:shadow-teal-500/20 hover:-translate-y-2 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm overflow-hidden relative">
                     {/* Gradient overlay on hover */}
                     <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
 
@@ -275,7 +286,7 @@ const Index = () => {
       </section>
 
       {/* Features Section with modern grid */}
-      <section className="py-24 px-4 bg-gradient-to-b from-white via-cyan-50/20 to-white dark:from-gray-900 dark:via-cyan-950/20 dark:to-gray-900 relative overflow-hidden">
+      <section className="py-24 px-4 bg-slate-50 dark:bg-slate-900 relative overflow-hidden">
         {/* Decorative grid pattern */}
         <div className="absolute inset-0 bg-grid-pattern opacity-5" />
 
@@ -303,16 +314,16 @@ const Index = () => {
                   className={`group transform transition-all duration-700 delay-${index * 100} ${featuresVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'
                     }`}
                 >
-                  <div className="flex gap-5 items-start p-6 rounded-2xl hover:bg-white/80 dark:hover:bg-gray-900/80 backdrop-blur-sm transition-all duration-300 border border-transparent hover:border-teal-200 dark:hover:border-teal-800 hover:shadow-xl group cursor-pointer">
+                  <div className="flex gap-5 items-start p-6 rounded-2xl hover:bg-white/80 dark:hover:bg-slate-800/80 backdrop-blur-sm transition-all duration-300 border border-transparent hover:border-teal-200 dark:hover:border-teal-700 hover:shadow-xl group cursor-pointer">
                     <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg`}>
                       <feature.icon className="w-7 h-7 text-white" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl md:text-2xl font-bold mb-2 flex items-center gap-2 text-gray-900 dark:text-gray-100 group-hover:text-teal-700 dark:group-hover:text-teal-400 transition-colors">
+                      <h3 className="text-xl md:text-2xl font-bold mb-2 flex items-center gap-2 text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
                         {feature.title}
-                        <CheckCircle2 className="w-5 h-5 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <CheckCircle2 className="w-5 h-5 text-teal-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </h3>
-                      <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                      <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
                         {feature.desc}
                       </p>
                     </div>
@@ -366,13 +377,13 @@ const Index = () => {
       </section>
 
       {/* Modern Footer */}
-      <footer className="py-12 px-4 bg-gradient-to-b from-teal-50 to-white dark:from-teal-950 dark:to-gray-900 border-t border-teal-200 dark:border-teal-800 relative overflow-hidden">
+      <footer className="py-12 px-4 bg-slate-100 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 relative overflow-hidden">
         <div className="absolute inset-0 bg-grid-pattern opacity-5" />
         <div className="container mx-auto text-center relative z-10">
-          <p className="text-gray-600 dark:text-gray-300 text-sm md:text-base font-medium">
+          <p className="text-slate-600 dark:text-slate-400 text-sm md:text-base font-medium">
             {t.footerText}
           </p>
-          <div className="mt-4 flex justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <div className="mt-4 flex justify-center gap-2 text-xs text-slate-500 dark:text-slate-500">
             <span>© 2025 SwasthAI</span>
             <span>•</span>
             <span>Made with ❤️ for rural healthcare</span>

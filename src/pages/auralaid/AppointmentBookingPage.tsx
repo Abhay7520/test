@@ -159,7 +159,7 @@ const AppointmentBookingPage = () => {
     e.preventDefault();
 
     if (!currentUser || !selectedDoctor || !selectedDate || !selectedTimeSlot) {
-      toast({ title: "Error", description: 'Please fill in all required fields', variant: "destructive" });
+      toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
       return;
     }
 
@@ -173,11 +173,20 @@ const AppointmentBookingPage = () => {
         reason
       });
 
-      toast({ title: "Success", description: 'Appointment booked successfully!' });
-      navigate('/payment');
+      toast({ title: "Success", description: "Appointment booked successfully!" });
+      navigate('/payment', {
+        state: {
+          hospital,
+          doctor: selectedDoctor,
+          date: selectedDate,
+          time: selectedTimeSlot,
+          reason,
+          amount: selectedDoctor.fees
+        }
+      });
     } catch (error) {
       console.error('Error booking appointment:', error);
-      toast({ title: "Error", description: 'Failed to book appointment', variant: "destructive" });
+      toast({ title: "Error", description: "Failed to book appointment", variant: "destructive" });
     }
   };
 
@@ -538,5 +547,6 @@ const AppointmentBookingPage = () => {
     </div>
   );
 };
+
 
 export default AppointmentBookingPage;

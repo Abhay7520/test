@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Users, Mail, MessageSquare, Send, UserPlus, Trash2, User, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Contact {
   id: string;
@@ -25,7 +26,7 @@ interface MedicalInfo {
 }
 
 const EmergencyContacts = () => {
-  const { emergencyContacts, updateEmergencyContacts } = useAuth();
+  const { emergencyContacts, user, updateEmergencyContacts } = useAuth();
 
   const [medicalInfo, setMedicalInfo] = useState<MedicalInfo>(() => {
     const saved = localStorage.getItem("medicalInfo");
@@ -52,14 +53,7 @@ const EmergencyContacts = () => {
     localStorage.setItem("medicalInfo", JSON.stringify(medicalInfo));
   }, [medicalInfo]);
 
-  const notifyContacts = async () => {
-    if (emergencyContacts.length === 0) {
-      toast.error("No emergency contacts", {
-        description: "Please add at least one contact first.",
-      });
-      return;
-    }
-
+  const sendAlert = async (recipients: Contact[]) => {
     if (!medicalInfo.userName) {
       toast.error("Medical information incomplete", {
         description: "Please add your name in medical information.",
@@ -97,42 +91,48 @@ ${medicalInfo.medications ? `Current Medications: ${medicalInfo.medications}` : 
           // Clean phone numbers (remove spaces and special chars except +)
           const cleanPhone = (phone: string) => phone.replace(/[^\d+]/g, '');
 
-          // Send to each contact
-          let successCount = 0;
-          for (const contact of emergencyContacts) {
-            const phoneNumber = cleanPhone(contact.phone);
+          const phoneNumbers = recipients.map(c => cleanPhone(c.phone));
+          const uniqueNumbers = [...new Set(phoneNumbers)];
 
-            // WhatsApp (opens WhatsApp with pre-filled message)
+          // 1. Send SMS to ALL recipients at once (works on most modern mobiles)
+          // Android uses comma, iOS can use comma or ampersand. Comma is safest common denominator for now.
+          if (uniqueNumbers.length > 0) {
+            const allPhones = uniqueNumbers.join(',');
+            const smsUrl = `sms:${allPhones}?body=${encodeURIComponent(message)}`;
+
+            try {
+              window.open(smsUrl, '_blank');
+              successCount++;
+            } catch (e) {
+              console.error("Failed to open SMS app", e);
+            }
+          }
+
+          // 2. Send WhatsApp to each contact (Note: Browser popup blockers may stop >1 window)
+          // We add a delay between them to try and help, but user might need to allow popups
+          let waCount = 0;
+          for (const contact of recipients) {
+            const phoneNumber = cleanPhone(contact.phone);
             const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 
-            // SMS (opens SMS app with pre-filled message)
-            const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
-
-            // Open both in new tabs/windows
             try {
-              // For mobile, we'll open WhatsApp first
-              window.open(whatsappUrl, '_blank');
-
-              // Small delay before opening SMS
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              window.open(smsUrl, '_blank');
-
-              successCount++;
+              // Stagger the calls slightly
+              await new Promise(resolve => setTimeout(resolve, 500 + (waCount * 800)));
+              const win = window.open(whatsappUrl, '_blank');
+              if (win) waCount++;
             } catch (error) {
-              console.error(`Failed to notify ${contact.name}:`, error);
+              console.error(`Failed to notify ${contact.name} on WhatsApp:`, error);
             }
           }
 
           setIsNotifying(false);
 
-          if (successCount > 0) {
-            toast.success(`Opening ${successCount} notification window(s)`, {
-              description: "WhatsApp and SMS apps will open with pre-filled emergency messages. Please send them.",
-            });
-          } else {
-            toast.error("Failed to open notification apps", {
-              description: "Please check your browser settings.",
-            });
+          toast.success("Alert dispatched", {
+            description: `Opened SMS with ${uniqueNumbers.length} recipients.${waCount > 0 ? ` Attempted ${waCount} WhatsApp chats.` : ''}`,
+          });
+
+          if (recipients.length > 2) {
+            toast.info("Tip: If some WhatsApp windows didn't open, checks your browser's popup blocker settings.");
           }
         },
         (error) => {
@@ -156,7 +156,17 @@ ${medicalInfo.medications ? `Current Medications: ${medicalInfo.medications}` : 
     }
   };
 
-  const addContact = () => {
+  const notifyContacts = () => {
+    if (emergencyContacts.length === 0) {
+      toast.error("No emergency contacts", {
+        description: "Please add at least one contact first.",
+      });
+      return;
+    }
+    sendAlert(emergencyContacts);
+  };
+
+  const addContact = async () => {
     if (!newContact.name || !newContact.phone) {
       toast.error("Please fill required fields", {
         description: "Name and phone number are required.",
@@ -164,20 +174,50 @@ ${medicalInfo.medications ? `Current Medications: ${medicalInfo.medications}` : 
       return;
     }
 
-    const contact: Contact = {
-      id: Date.now().toString(),
-      ...newContact,
-    };
+    if (!user) {
+      toast.error("You must be logged in to add contacts");
+      return;
+    }
 
-    updateEmergencyContacts([...emergencyContacts, contact]);
-    setNewContact({ name: "", phone: "", email: "", relation: "" });
-    setShowAddForm(false);
-    toast.success("Contact added successfully");
+    try {
+      const { error } = await supabase
+        .from('emergency_contacts')
+        .insert({
+          user_id: user.id,
+          name: newContact.name,
+          phone: newContact.phone,
+          email: newContact.email,
+          relation: newContact.relation
+        });
+
+      if (error) throw error;
+
+      setNewContact({ name: "", phone: "", email: "", relation: "" });
+      setShowAddForm(false);
+      toast.success("Contact added successfully");
+
+      // Explicitly refresh contacts to ensure UI updates immediately
+      // The real-time subscription will also catch this, but this is a fail-safe
+      await updateEmergencyContacts([]); // Argument ignored by current implementation of updateEmergencyContacts
+    } catch (error) {
+      console.error("Error adding contact:", error);
+      toast.error("Failed to add contact");
+    }
   };
 
-  const deleteContact = (id: string) => {
-    updateEmergencyContacts(emergencyContacts.filter((c) => c.id !== id));
-    toast.success("Contact removed");
+  const deleteContact = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('emergency_contacts')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success("Contact removed");
+    } catch (error) {
+      console.error("Error deleting contact:", error);
+      toast.error("Failed to delete contact");
+    }
   };
 
   return (
@@ -385,13 +425,25 @@ ${medicalInfo.medications ? `Current Medications: ${medicalInfo.medications}` : 
                       )}
                     </div>
                   </div>
-                  <Button
-                    onClick={() => deleteContact(contact.id)}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => sendAlert([contact])}
+                      variant="outline"
+                      size="sm"
+                      className="bg-emergency/10 hover:bg-emergency/20 text-emergency border-emergency/30"
+                      disabled={isNotifying}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Notify
+                    </Button>
+                    <Button
+                      onClick={() => deleteContact(contact.id)}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
               </Card>
             ))}

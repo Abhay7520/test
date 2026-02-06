@@ -57,157 +57,122 @@ const Emergency = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emergency-light via-background to-warning-light">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col relative overflow-hidden">
+      {/* Ambient Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-teal-500/5 dark:from-red-500/10 dark:to-teal-500/10 pointer-events-none" />
+
       {/* Header */}
-      <header className="bg-emergency text-emergency-foreground py-4 px-4 shadow-lg">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/")}
-              className="text-emergency-foreground hover:bg-emergency-foreground/20 mr-1"
-            >
-              <ArrowLeft className="h-6 w-6" />
-            </Button>
-            <AlertCircle className="h-8 w-8" />
+      <header className="z-10 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-white/20 dark:border-slate-800 py-4 px-6 flex items-center justify-between sticky top-0 shadow-sm">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/")}
+            className="rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-500">
+              <AlertCircle className="h-5 w-5" />
+            </div>
             <div>
-              <h1 className="text-2xl font-bold">{t.emergency}</h1>
-              <p className="text-sm opacity-90">{t.helpOneTap}</p>
+              <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100 leading-tight">{t.emergency}</h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Use only in case of emergency</p>
             </div>
           </div>
-          {emergencyActive && (
-            <div className="flex items-center gap-2 bg-emergency-foreground/20 px-3 py-1 rounded-full">
-              <div className="h-2 w-2 bg-emergency-foreground rounded-full animate-pulse" />
-              <span className="text-sm font-medium">{t.active}</span>
-            </div>
-          )}
         </div>
+        {emergencyActive && (
+          <div className="flex items-center gap-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-3 py-1.5 rounded-full border border-red-200 dark:border-red-900/50 shadow-sm animate-pulse">
+            <div className="h-2 w-2 bg-red-600 dark:bg-red-500 rounded-full" />
+            <span className="text-xs font-bold uppercase tracking-wider">{t.active}</span>
+          </div>
+        )}
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto p-4 py-8">
-        {emergencyActive ? (
-          <AmbulanceTracking
-            onBack={() => setEmergencyActive(false)}
-            onCancel={() => {
-              setEmergencyActive(false);
-              toast.info(t.emergencyCancelled);
-            }}
-          />
-        ) : !activeSection ? (
-          <div className="space-y-6 animate-fade-in">
-            {/* Emergency Call Button - Most Prominent */}
-            <Card className="p-6 bg-gradient-to-r from-emergency to-emergency-hover border-emergency shadow-emergency hover:scale-[1.02] transition-transform animate-slide-up">
-              <button
-                onClick={handleCallAmbulance}
-                className="w-full text-left"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-full bg-emergency-foreground/20 flex items-center justify-center">
-                    <Phone className="h-8 w-8 text-emergency-foreground" />
-                  </div>
-                  <div className="flex-1">
-                    <h2 className="text-2xl font-bold text-emergency-foreground mb-1">
-                      {t.callAmbulance}
-                    </h2>
-                    <p className="text-emergency-foreground/90">
-                      {t.oneTapCall}
-                    </p>
-                  </div>
-                  <div className="text-emergency-foreground">→</div>
-                </div>
-              </button>
-            </Card>
-
-            {/* Other Emergency Options */}
-            <div className="grid md:grid-cols-2 gap-4">
-              <Card className="p-6 hover:shadow-lg transition-all cursor-pointer hover:border-emergency animate-slide-up" style={{ animationDelay: "0.1s" }}
-                onClick={() => setActiveSection("location")}>
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-info-light flex items-center justify-center">
-                    <MapPin className="h-6 w-6 text-info" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">{t.shareLocation}</h3>
-                    <p className="text-sm text-muted-foreground">{t.liveGps}</p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-6 hover:shadow-lg transition-all cursor-pointer hover:border-warning animate-slide-up" style={{ animationDelay: "0.2s" }}
-                onClick={() => setActiveSection("contacts")}>
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-warning-light flex items-center justify-center">
-                    <Users className="h-6 w-6 text-warning" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">{t.emergencyContacts}</h3>
-                    <p className="text-sm text-muted-foreground">{t.notifyContacts}</p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-6 hover:shadow-lg transition-all cursor-pointer hover:border-success animate-slide-up" style={{ animationDelay: "0.3s" }}
-                onClick={() => setActiveSection("firstaid")}>
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-success-light flex items-center justify-center">
-                    <BookOpen className="h-6 w-6 text-success" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">{t.firstAidInstructions}</h3>
-                    <p className="text-sm text-muted-foreground">{t.stepByStep}</p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-6 hover:shadow-lg transition-all cursor-pointer hover:border-primary animate-slide-up" style={{ animationDelay: "0.4s" }}
-                onClick={() => setActiveSection("telemedicine")}>
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Video className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">{t.telemedicineCall}</h3>
-                    <p className="text-sm text-muted-foreground">{t.talkToDoctor}</p>
-                  </div>
-                </div>
-              </Card>
+      <main className="flex-1 overflow-y-auto p-4 md:p-8 relative z-0">
+        <div className="max-w-5xl mx-auto h-full">
+          {emergencyActive ? (
+            <div className="h-full flex flex-col justify-center animate-fade-in">
+              <AmbulanceTracking
+                onBack={() => setEmergencyActive(false)}
+                onCancel={() => {
+                  setEmergencyActive(false);
+                  toast.info(t.emergencyCancelled);
+                }}
+              />
             </div>
+          ) : !activeSection ? (
+            <div className="flex flex-col h-full justify-center gap-8 animate-fade-in py-8 md:py-0">
 
-            {/* Emergency Info */}
-            <Card className="p-6 bg-info-light border-info/20 animate-slide-up" style={{ animationDelay: "0.5s" }}>
-              <div className="flex gap-3">
-                <AlertCircle className="h-5 w-5 text-info flex-shrink-0 mt-0.5" />
-                <div className="space-y-2">
-                  <p className="font-medium text-info">{t.emergencyTips}</p>
-                  <ul className="text-sm text-info/90 space-y-1 list-disc list-inside">
-                    <li>{t.stayCalm}</li>
-                    <li>{t.locationAutoShared}</li>
-                    <li>{t.contactsNotified}</li>
-                    <li>{t.helpOnWay}</li>
-                  </ul>
+              {/* Hero Section: SOS */}
+              <div className="flex flex-col items-center justify-center">
+                <div className="relative group cursor-pointer mb-8" onClick={handleCallAmbulance}>
+                  {/* Pulse Effect */}
+                  <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20 duration-1000" />
+                  <div className="absolute inset-[-10px] bg-red-500/20 rounded-full blur-xl group-hover:bg-red-500/40 transition-all duration-300" />
+
+                  {/* Main Button */}
+                  <div className="relative h-48 w-48 md:h-64 md:w-64 rounded-full bg-gradient-to-br from-red-500 to-rose-600 shadow-2xl shadow-red-500/40 flex flex-col items-center justify-center border-8 border-white dark:border-slate-900 transform group-hover:scale-105 transition-all duration-300">
+                    <Phone className="h-12 w-12 md:h-16 md:w-16 text-white mb-2 animate-bounce-slow" />
+                    <span className="text-xl md:text-2xl font-black text-white px-4 text-center leading-none">
+                      {t.callAmbulance || "CALL Ambulance"}
+                    </span>
+                    <span className="text-xs md:text-sm text-white/80 mt-1 font-medium">Tap for Help</span>
+                  </div>
                 </div>
+                <p className="text-center text-slate-500 dark:text-slate-400 max-w-sm animate-slide-up">
+                  {t.helpOneTap || "Tap the button above immediately to call 108 and share your location with emergency contacts."}
+                </p>
               </div>
-            </Card>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <Button
-              variant="outline"
-              onClick={() => setActiveSection(null)}
-              className="mb-4"
-            >
-              <X className="h-4 w-4 mr-2" />
-              {t.backToEmergency}
-            </Button>
 
-            {activeSection === "location" && <LocationShare />}
-            {activeSection === "contacts" && <EmergencyContacts />}
-            {activeSection === "firstaid" && <FirstAidGuide />}
-            {activeSection === "telemedicine" && <TelemedicineCall />}
-          </div>
-        )}
+              {/* Tools Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-slide-up" style={{ animationDelay: "0.1s" }}>
+                {[
+                  { id: "location", icon: MapPin, title: t.shareLocation, desc: t.liveGps, color: "text-sky-500", bg: "bg-sky-500/10", border: "hover:border-sky-500/50" },
+                  { id: "contacts", icon: Users, title: t.emergencyContacts, desc: t.notifyContacts, color: "text-amber-500", bg: "bg-amber-500/10", border: "hover:border-amber-500/50" },
+                  { id: "firstaid", icon: BookOpen, title: t.firstAidInstructions, desc: t.stepByStep, color: "text-emerald-500", bg: "bg-emerald-500/10", border: "hover:border-emerald-500/50" },
+                  { id: "telemedicine", icon: Video, title: t.telemedicineCall, desc: t.talkToDoctor, color: "text-violet-500", bg: "bg-violet-500/10", border: "hover:border-violet-500/50" }
+                ].map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => setActiveSection(item.id)}
+                    className={`group relative p-4 md:p-6 rounded-2xl bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 hover:shadow-xl transition-all duration-300 cursor-pointer ${item.border}`}
+                  >
+                    <div className={`h-12 w-12 rounded-xl ${item.bg} ${item.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                      <item.icon className="h-6 w-6" />
+                    </div>
+                    <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-1">{item.title}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col">
+              {/* Back Navigation for Sub-sections */}
+              <div className="sticky top-0 z-10 py-2 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-sm mb-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => setActiveSection(null)}
+                  className="gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  {t.backToEmergency}
+                </Button>
+              </div>
+
+              {/* Content Area */}
+              <div className="flex-1 animate-fade-in bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-slate-700/50 p-6 shadow-lg">
+                {activeSection === "location" && <LocationShare />}
+                {activeSection === "contacts" && <EmergencyContacts />}
+                {activeSection === "firstaid" && <FirstAidGuide />}
+                {activeSection === "telemedicine" && <TelemedicineCall />}
+              </div>
+            </div>
+          )}
+        </div>
       </main>
 
       {/* Cancel Emergency Dialog */}

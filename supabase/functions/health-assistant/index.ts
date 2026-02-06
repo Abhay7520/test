@@ -47,46 +47,55 @@ serve(async (req) => {
     const languageName = languageMap[language] || 'English';
 
     // System Prompt with STRICT MCQ & Summary Formatting
+    // System Prompt with Two Phases: Investigation vs Diagnosis
     const systemPrompt = `You are SwasthAI, a healthcare assistant.
+Your goal is to diagnose the user's health condition by asking specific questions.
 
-CRITICAL INSTRUCTION: Act as a QUIZ MASTER.
-EVERY RESPONSE MUST BE IN STRICT MCQ FORMAT.
+PHASE 1: INVESTIGATION
+If the user's symptoms are vague or you need more info (e.g. just said "I have a headache"):
+- Ask ONE follow-up question to clarify the cause.
+- Provide 4 MCQ options (A, B, C, D) for the user to choose.
+- Format:
+  ❓ QUESTION: [Your Question]
+  OPTIONS:
+  A) [Option A]
+  B) [Option B]
+  C) [Option C]
+  D) [Option D]
+- DO NOT provide a diagnosis, diet, or medicine recommendations in this phase.
 
-Headers MUST be exactly as below (REMAIN IN ENGLISH):
+PHASE 2: DIAGNOSIS
+If you have sufficient information to identify the condition:
+- Provide the final diagnosis and recommendations.
+- USE THE FOLLOWING STRICT HEADERS (Keep headers in ENGLISH):
 
 ✅ ANSWER:
-[Diagnosis]
+[Primary Diagnosis]
 
 📋 EXPLANATION:
-[Details]
+[Brief explanation]
 
 🔍 POSSIBLE CONDITIONS:
-A)
-B)
-C)
-D)
+[List]
 
 ⚠️ SEVERITY:
 [Mild/Moderate/Severe]
 
 💊 IMMEDIATE ACTIONS:
-A)
-B)
-C)
-D)
+[List]
 
 🥗 DIET RECOMMENDATIONS:
-[Details/List]
+[List]
 
 💊 MEDICINE RECOMMENDATIONS:
-[Details/List]
+[List]
 
 👨‍⚕️ SUGGESTED SPECIALISTS:
-[Details/List]
+[List (MUST BE IN ENGLISH, e.g. Cardiologist, Dermatologist, General Physician)]
 
-LANGUAGE: Respond ONLY in ${languageName}.
-Ensure strictly 4 options (A,B,C,D) for lists.
-EXCEPTION: Keep the HEADERS above in ENGLISH, even if the content is translated.`;
+LANGUAGE constraint: Respond in ${languageName}.
+CRITICAL EXCEPTION: YOU MUST KEEP THE HEADERS ABOVE (e.g. "🥗 DIET RECOMMENDATIONS:") EXACTLY IN ENGLISH, even if the rest of the response is in Hindi or Telugu.
+ADDITIONALLY: The content of "SUGGESTED SPECIALISTS" MUST be in English script if possible. Do NOT translate specialist names.`;
 
     const contents = [];
 
@@ -108,24 +117,36 @@ EXCEPTION: Keep the HEADERS above in ENGLISH, even if the content is translated.
       parts: [{ text: message }]
     });
 
-    console.log("Sending request to Gemini API...");
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: systemPrompt }]
+    // Helper function to call Gemini API
+    const callGeminiAPI = async (model: string) => {
+      console.log(`Sending request to Gemini API (${model})...`);
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        contents: contents,
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 1000,
-        }
-      }),
-    });
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: systemPrompt }]
+          },
+          contents: contents,
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 1000,
+          }
+        }),
+      });
+      return response;
+    };
+
+    // Primary Call: Gemini 2.5 Flash
+    let response = await callGeminiAPI('gemini-2.5-flash');
+
+    // Fallback Logic: If 503 (Overloaded) or 429 (Rate Limit), try Gemini 1.5 Flash
+    if (!response.ok && (response.status === 503 || response.status === 429)) {
+      console.warn(`Gemini 2.5 Flash failed with status ${response.status}. Retrying with Gemini 1.5 Flash...`);
+      response = await callGeminiAPI('gemini-1.5-flash');
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -133,7 +154,7 @@ EXCEPTION: Keep the HEADERS above in ENGLISH, even if the content is translated.
       return new Response(
         JSON.stringify({
           error: "Gemini API Error",
-          details: `Status: ${response.status}. Message: ${errorText}. Endpoint: v1beta/gemini-2.5-flash`
+          details: `Status: ${response.status}. Message: ${errorText}. Endpoint: v1beta/gemini`
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -155,17 +176,22 @@ EXCEPTION: Keep the HEADERS above in ENGLISH, even if the content is translated.
     // Logic to parse Summary
     let summary = null;
     try {
-      // Regex to extract sections between headers
-      // We use [\s\S]*? to match multiline content non-greedily
-      const conditionMatch = aiResponse.match(/✅ ANSWER:\s*([^\n]+)/i) || aiResponse.match(/POSSIBLE CONDITIONS:([\s\S]*?)(?=⚠️|💊|🥗|$)/i);
-      const suggestionsMatch = aiResponse.match(/💊 IMMEDIATE ACTIONS:([\s\S]*?)(?=🥗|💊 MEDICINE|👨‍⚕️|$)/i);
-      const dietMatch = aiResponse.match(/🥗 DIET RECOMMENDATIONS:([\s\S]*?)(?=💊|👨‍⚕️|$)/i);
-      const medicineMatch = aiResponse.match(/💊 MEDICINE RECOMMENDATIONS:([\s\S]*?)(?=👨‍⚕️|$)/i);
-      const specialistsMatch = aiResponse.match(/👨‍⚕️ SUGGESTED SPECIALISTS:([\s\S]*?)(?=$)/i);
+      // Regex to extract sections between headers - Updated to support Multilingual Headers (Hindi/Telugu)
+      // We use (?:...) for non-capturing groups so the content is always in capture group 1
+      const conditionMatch = aiResponse.match(/(?:✅|🆗) (?:ANSWER|उत्तर|సమాధానం):\s*([^\n]+)/i) ||
+        aiResponse.match(/(?:🔍|🔎) (?:POSSIBLE CONDITIONS|संभावित स्थितियाँ|సాధ్యమయ్యే పరిస్థితులు):([\s\S]*?)(?=⚠️|💊|🥗|$)/i);
 
-      if (conditionMatch && (aiResponse.includes("POSSIBLE CONDITIONS") || aiResponse.includes("ANSWER"))) {
+      const suggestionsMatch = aiResponse.match(/💊 (?:IMMEDIATE ACTIONS|तुरंत कार्रवाई|తక్షణ చర్యలు):([\s\S]*?)(?=🥗|💊 (?:MEDICINE|दवा|మందుల)|👨‍⚕️|$)/i);
+
+      const dietMatch = aiResponse.match(/🥗 (?:DIET RECOMMENDATIONS|आहार सुझाव|ఆహార సూచనలు):([\s\S]*?)(?=💊|👨‍⚕️|$)/i);
+
+      const medicineMatch = aiResponse.match(/💊 (?:MEDICINE RECOMMENDATIONS|दवा सुझाव|మందుల సూచనలు):([\s\S]*?)(?=👨‍⚕️|$)/i);
+
+      const specialistsMatch = aiResponse.match(/👨‍⚕️ (?:SUGGESTED SPECIALISTS|सुझाए गए विशेषज्ञ|సూచించిన నిపుణులు):([\s\S]*?)(?=$)/i);
+
+      if (conditionMatch && (aiResponse.includes("POSSIBLE CONDITIONS") || aiResponse.includes("ANSWER") || aiResponse.includes("उत्तर") || aiResponse.includes("సమాధానం"))) {
         summary = {
-          condition: conditionMatch[1].trim().replace(/^A\)\s*/, ""), // Clean leading "A)" if matched from list
+          condition: conditionMatch[1].trim().replace(/^A\)\s*/, ""),
           severity: severity,
           suggestions: suggestionsMatch ? suggestionsMatch[1].trim() : "Follow general health advice.",
           recheckIn: severity === "emergency" ? "Immediately" : severity === "moderate" ? "2-3 days" : "1 week",

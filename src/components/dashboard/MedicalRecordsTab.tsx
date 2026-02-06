@@ -42,10 +42,10 @@ export const MedicalRecordsTab = () => {
             if (data) {
                 const formattedRecords: MedicalRecord[] = data.map(record => ({
                     id: record.id,
-                    title: record.title,
+                    title: record.title || "Untitled Record",
                     type: (record.type as any) || "other",
-                    date: record.date,
-                    doctor: record.doctor_name || undefined,
+                    date: record.date || new Date(record.created_at).toLocaleDateString(),
+                    doctor: record.doctor_name || "Unknown Doctor",
                     size: "1.2 MB" // Placeholder as we don't store size yet
                 }));
                 setRecords(formattedRecords);
@@ -104,8 +104,8 @@ export const MedicalRecordsTab = () => {
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <h2 className="text-2xl font-bold">{t.medicalRecords}</h2>
-                <Button onClick={handleUpload}>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">{t.medicalRecords}</h2>
+                <Button onClick={handleUpload} className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 shadow-lg shadow-teal-500/20 rounded-xl">
                     <Upload className="w-4 h-4 mr-2" />
                     {t.uploadRecord}
                 </Button>
@@ -113,56 +113,63 @@ export const MedicalRecordsTab = () => {
 
             {/* Search and Filter */}
             <div className="flex gap-3">
-                <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <div className="relative flex-1 max-w-md group">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-teal-500 transition-colors" />
                     <Input
                         placeholder={t.searchRecords}
-                        className="pl-9"
+                        className="pl-10 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-200/50 dark:border-slate-700/50 focus:border-teal-500/50 focus:ring-teal-500/20 rounded-xl h-11 transition-all"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <Button variant="outline" size="icon">
-                    <Filter className="w-4 h-4" />
+                <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl bg-white/50 dark:bg-slate-800/50 border-slate-200/50 backdrop-blur-sm">
+                    <Filter className="w-4 h-4 text-slate-500" />
                 </Button>
             </div>
 
             {/* Records List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredRecords.length > 0 ? (
                     filteredRecords.map((record) => {
                         const Icon = getIcon(record.type);
-                        const colorClass = getColor(record.type);
+                        // Convert specific tailwind colors to gradients for the icon background
+                        const gradient = record.type === "prescription" ? "from-blue-400 to-indigo-500" :
+                            record.type === "lab_report" ? "from-purple-400 to-fuchsia-500" :
+                                "from-slate-400 to-slate-600";
+                        const shadow = record.type === "prescription" ? "shadow-blue-500/30" :
+                            record.type === "lab_report" ? "shadow-purple-500/30" :
+                                "shadow-slate-500/30";
 
                         return (
-                            <Card key={record.id} className="hover:shadow-md transition-all group">
+                            <Card key={record.id} className="border-white/20 dark:border-slate-700/50 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group rounded-2xl overflow-hidden">
                                 <CardContent className="p-5">
                                     <div className="flex justify-between items-start mb-4">
-                                        <div className={`w-10 h-10 rounded-lg ${colorClass} flex items-center justify-center`}>
-                                            <Icon className="w-5 h-5" />
+                                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg ${shadow} group-hover:scale-110 transition-transform`}>
+                                            <Icon className="w-6 h-6 text-white" />
                                         </div>
-                                        <Badge variant="secondary" className="capitalize text-xs">
+                                        <Badge variant="secondary" className="capitalize text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                                             {record.type.replace("_", " ")}
                                         </Badge>
                                     </div>
 
-                                    <h3 className="font-semibold truncate mb-1" title={record.title}>{record.title}</h3>
-                                    <p className="text-sm text-muted-foreground mb-4">
+                                    <h3 className="font-bold text-lg truncate mb-1 text-slate-800 dark:text-slate-100" title={record.title}>{record.title}</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
                                         {record.date} • {record.size}
                                     </p>
 
                                     {record.doctor && (
-                                        <div className="text-xs text-muted-foreground mb-4 flex items-center gap-1">
-                                            <span className="font-medium text-foreground">{t.prescribedBy}</span> {record.doctor}
+                                        <div className="text-xs text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg">
+                                            <span className="font-semibold text-teal-600 dark:text-teal-400">{t.prescribedBy}</span> {record.doctor}
                                         </div>
                                     )}
 
-                                    <div className="flex gap-2 mt-auto pt-4 border-t border-border">
-                                        <Button variant="ghost" size="sm" className="flex-1 h-8 text-xs">
+                                    <div className="flex gap-2 mt-auto pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
+                                        <Button variant="ghost" size="sm" className="flex-1 h-9 text-xs font-medium hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-600">
                                             <Eye className="w-3.5 h-3.5 mr-1.5" />
                                             {t.view}
                                         </Button>
-                                        <Button variant="ghost" size="sm" className="flex-1 h-8 text-xs">
+                                        <Button variant="ghost" size="sm" className="flex-1 h-9 text-xs font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600">
                                             <Download className="w-3.5 h-3.5 mr-1.5" />
                                             {t.download}
                                         </Button>
@@ -172,9 +179,10 @@ export const MedicalRecordsTab = () => {
                         );
                     })
                 ) : (
-                    <div className="col-span-full text-center py-12 text-muted-foreground bg-muted/30 rounded-xl border border-dashed">
-                        <FileText className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                        <p>{t.noRecordsFound}</p>
+                    <div className="col-span-full text-center py-16 px-4 text-muted-foreground bg-white/40 dark:bg-slate-800/40 backdrop-blur-sm rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
+                        <FileText className="w-16 h-16 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
+                        <p className="text-lg font-medium">{t.noRecordsFound}</p>
+                        <p className="text-sm opacity-70">Upload documents to keep them safe</p>
                     </div>
                 )}
             </div>

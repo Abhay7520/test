@@ -479,8 +479,16 @@ const Assistant = () => {
   const t = translations[language];
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading]);
+    const scrollToBottom = () => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    scrollToBottom();
+
+    if (summaryData) {
+      setTimeout(scrollToBottom, 100);
+    }
+  }, [messages, isLoading, summaryData]);
 
   const startRecording = async () => {
     try {
@@ -922,7 +930,7 @@ const Assistant = () => {
                         </div>
                       </div>
                     )}
-                    <div ref={messagesEndRef} />
+
                   </>
                 )}
               </div>
@@ -958,6 +966,7 @@ const Assistant = () => {
                   )}
                 </div>
               )}
+              <div ref={messagesEndRef} />
 
 
               {/* Input Area */}
